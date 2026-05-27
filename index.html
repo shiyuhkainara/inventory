@@ -2075,6 +2075,25 @@ async function syncFromGAS() {
         normalizeDates(transfers);
         normalizeDates(checkHistory);
 
+        // 文字列フィールドを全て安全に変換（数値・オブジェクト・null が来ても trim() できるよう）
+        function normalizeStrings(arr, keys) {
+            arr.forEach(item => {
+                keys.forEach(key => {
+                    const v = item[key];
+                    if (v === null || v === undefined) {
+                        item[key] = '';
+                    } else if (typeof v !== 'string') {
+                        item[key] = String(v);
+                    }
+                });
+            });
+        }
+        normalizeStrings(inventory, ['name','category','lot','size','freq','supplier','unit','packUnit','stockType']);
+        normalizeStrings(orders,    ['material','orderUnit','orderUnitLabel','supplier','status','orderedBy','registrant']);
+        normalizeStrings(transfers, ['itemName','transferBy','memo']);
+        normalizeStrings(checkHistory, ['itemName','checkedBy','memo']);
+        normalizeStrings(productMasters, ['name','furigana','category','supplier','freq','size','memo','unit','packUnit','stockType']);
+
         customCategories = d.customCategories || customCategories || [];
         // suppliersは文字列配列に正規化（スプシから数値等が来ても安全に処理）
         const rawSup = (d.suppliers || []).map(v => String(v)).filter(v => v.trim() !== '');
