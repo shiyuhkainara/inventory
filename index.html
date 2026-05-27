@@ -2632,7 +2632,7 @@ function updateDashboard() {
     for (let i = 1; i <= 4; i++) {
         const ci = inventory.filter(x => x.clinicId === i);
         const cb = ci.filter(x => x.quantity < x.optimalStock);
-        document.getElementById(`clinic${i}Stats`).textContent = `${ci.length}品目 / 要補充: ${cb}`;
+        document.getElementById(`clinic${i}Stats`).textContent = `${ci.length}品目 / 要補充: ${cb.length}`;
     }
     const ab = inventory.filter(x => x.quantity < x.optimalStock);
     document.getElementById('allStats').textContent = `${inventory.length}品目 / 要補充: ${ab.length}`;
@@ -2667,6 +2667,32 @@ function formatStockQuantity(item) {
 // ===========================
 // 画像処理
 // ===========================
+
+// 画像をCanvas経由でリサイズ・圧縮してbase64を返す（長辺maxSize px・JPEG quality）
+function resizeImageToBase64(file, maxSize, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                let w = img.width, h = img.height;
+                if (w > maxSize || h > maxSize) {
+                    if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+                    else       { w = Math.round(w * maxSize / h); h = maxSize; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 let currentMasterImage = null;
 
 function handleMasterImageUpload(input) {
@@ -2947,32 +2973,6 @@ function saveEditMaster() {
     renderProductMaster();
     hideModal('editMasterModal');
     alert('✅ 製品マスターを更新しました');
-}
-
-// 画像をCanvas経由でリサイズ・圧縮してbase64を返す
-// maxSize: 長辺の最大ピクセル数, quality: JPEG品質(0-1)
-function resizeImageToBase64(file, maxSize, quality) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                let w = img.width, h = img.height;
-                if (w > maxSize || h > maxSize) {
-                    if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-                    else       { w = Math.round(w * maxSize / h); h = maxSize; }
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
 }
 
 function handleEditMasterImageUpload(input) {
