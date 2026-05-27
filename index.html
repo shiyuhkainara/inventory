@@ -2053,6 +2053,28 @@ async function syncFromGAS() {
         transfers      = mergeById(d.transfers,       transfers,      new Set());
         checkHistory   = mergeById(d.checkHistory,    checkHistory,   new Set());
 
+        // 日付フィールドをDateオブジェクト→文字列に正規化（GASがDateオブジェクトを返す場合の対策）
+        function normalizeDates(arr) {
+            arr.forEach(item => {
+                ['expiry','lastCheck','orderDate','deliveredDate','transferDate','checkDate'].forEach(key => {
+                    const v = item[key];
+                    if (!v || v === 0 || v === '0') {
+                        item[key] = null;
+                    } else if (typeof v === 'object') {
+                        try {
+                            const dt = new Date(v);
+                            item[key] = (!isNaN(dt.getTime()) && dt.getFullYear() >= 1900)
+                                ? dt.toISOString().slice(0, 10) : null;
+                        } catch(e) { item[key] = null; }
+                    }
+                });
+            });
+        }
+        normalizeDates(inventory);
+        normalizeDates(orders);
+        normalizeDates(transfers);
+        normalizeDates(checkHistory);
+
         customCategories = d.customCategories || customCategories || [];
         // suppliersは文字列配列に正規化（スプシから数値等が来ても安全に処理）
         const rawSup = (d.suppliers || []).map(v => String(v)).filter(v => v.trim() !== '');
