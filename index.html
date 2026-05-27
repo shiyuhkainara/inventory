@@ -2054,7 +2054,9 @@ async function syncFromGAS() {
         checkHistory   = mergeById(d.checkHistory,    checkHistory,   new Set());
 
         customCategories = d.customCategories || customCategories || [];
-        suppliers        = (d.suppliers && d.suppliers.length) ? d.suppliers : DEFAULT_SUPPLIERS;
+        // suppliersは文字列配列に正規化（スプシから数値等が来ても安全に処理）
+        const rawSup = (d.suppliers || []).map(v => String(v)).filter(v => v.trim() !== '');
+        suppliers = rawSup.length ? rawSup : DEFAULT_SUPPLIERS;
         window.deletedDefaultCategories = d.deletedDefaultCategories || [];
         window.deletedDefaultSuppliers  = d.deletedDefaultSuppliers  || [];
 
@@ -3265,7 +3267,7 @@ function renderInventory() {
         const normalizedSize = (item.size || '').trim().toUpperCase();
         
         // 消費期限の有無を厳格にチェック（空文字列、null、undefinedは全て「なし」扱い）
-        const hasExpiry = item.expiry && item.expiry.trim() !== '';
+        const hasExpiry = item.expiry && String(item.expiry).trim() !== '' && String(item.expiry).trim() !== '0';
         
         if (!hasExpiry) {
             // 期限なしの場合：クリニック、材料名、サイズで統合
